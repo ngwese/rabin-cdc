@@ -6,8 +6,6 @@
 #define MASK ((1<<AVERAGE_BITS)-1)
 #define POL_SHIFT (POLYNOMIAL_DEGREE-8)
 
-struct chunk_t last_chunk;
-
 static bool tables_initialized = false;
 static uint64_t mod_table[256];
 static uint64_t out_table[256];
@@ -116,9 +114,9 @@ int rabin_next_chunk(struct rabin_t *h, uint8_t *buf, unsigned int len) {
         h->pos++;
 
         if ((h->count >= MINSIZE && ((h->digest & MASK) == 0)) || h->count >= MAXSIZE) {
-            last_chunk.start = h->start;
-            last_chunk.length = h->count;
-            last_chunk.cut_fingerprint = h->digest;
+            h->last_chunk.start = h->start;
+            h->last_chunk.length = h->count;
+            h->last_chunk.cut_fingerprint = h->digest;
 
             // keep position
             unsigned int pos = h->pos;
@@ -139,11 +137,15 @@ struct rabin_t *rabin_init(void) {
         tables_initialized = true;
     }
 
-    struct rabin_t *h;
+    struct rabin_t *h = (struct rabin_t *)malloc(sizeof(struct rabin_t));
 
-    if ((h = malloc(sizeof(struct rabin_t))) == NULL) {
+    if (h == NULL) {
         errx(1, "malloc()");
     }
+    h->start = 0;
+    h->last_chunk.start = 0;
+    h->last_chunk.length = 0;
+    h->last_chunk.cut_fingerprint = 0;
 
     rabin_reset(h);
 
@@ -153,14 +155,14 @@ struct rabin_t *rabin_init(void) {
 
 struct chunk_t *rabin_finalize(struct rabin_t *h) {
     if (h->count == 0) {
-        last_chunk.start = 0;
-        last_chunk.length = 0;
-        last_chunk.cut_fingerprint = 0;
+        h->last_chunk.start = 0;
+        h->last_chunk.length = 0;
+        h->last_chunk.cut_fingerprint = 0;
         return NULL;
     }
 
-    last_chunk.start = h->start;
-    last_chunk.length = h->count;
-    last_chunk.cut_fingerprint = h->digest;
-    return &last_chunk;
+    h->last_chunk.start = h->start;
+    h->last_chunk.length = h->count;
+    h->last_chunk.cut_fingerprint = h->digest;
+    return &h->last_chunk;
 }

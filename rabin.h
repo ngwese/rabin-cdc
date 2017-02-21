@@ -10,6 +10,12 @@
 #define MINSIZE (512*1024)
 #define MAXSIZE (8*1024*1024)
 
+struct chunk_t {
+    unsigned int start;
+    unsigned int length;
+    uint64_t cut_fingerprint;
+};
+
 struct rabin_t {
     uint8_t window[WINSIZE];
     unsigned int wpos;
@@ -17,15 +23,8 @@ struct rabin_t {
     unsigned int pos;
     unsigned int start;
     uint64_t digest;
+    struct chunk_t last_chunk;
 };
-
-struct chunk_t {
-    unsigned int start;
-    unsigned int length;
-    uint64_t cut_fingerprint;
-};
-
-extern struct chunk_t last_chunk;
 
 struct rabin_t *rabin_init(void);
 void rabin_reset(struct rabin_t *h);
